@@ -3,8 +3,8 @@
 **English** | [Русский](./README.ru.md)
 
 [![npm](https://img.shields.io/npm/v/%40a1-x-tech%2Fmcp-google-docs)](https://www.npmjs.com/package/@a1-x-tech/mcp-google-docs)
-[![CI](https://github.com/A1-x-Tech/mcp-google-docs/actions/workflows/ci.yml/badge.svg)](https://github.com/A1-x-Tech/mcp-google-docs/actions/workflows/ci.yml)
 [![Glama](https://glama.ai/mcp/servers/A1-x-Tech/mcp-google-docs/badges/score.svg)](https://glama.ai/mcp/servers/A1-x-Tech/mcp-google-docs)
+[![CI](https://github.com/A1-x-Tech/mcp-google-docs/actions/workflows/ci.yml/badge.svg)](https://github.com/A1-x-Tech/mcp-google-docs/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **A1 Google Docs MCP** lets an AI app read and edit Google Docs in plain language. Read a document as text or Markdown, change an exact passage, style headings, lists and tables, work through comment threads and export the result to PDF or DOCX.
