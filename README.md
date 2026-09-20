@@ -11,7 +11,8 @@
 
 It uses the Google Docs API with your Google account. It edits by exact index ranges rather than by guesswork, and makes the limits of the Docs API explicit instead of implying that every document task is possible.
 
-- **21 tools.** Read a document as text, structure or Markdown, edit exact ranges, style characters and paragraphs, manage lists, tables, breaks, images and comment threads, and export to PDF, DOCX and more.
+- **27 tools.** Read a document as text, structure or Markdown, edit exact ranges, style characters and paragraphs, manage lists, tables, breaks, images and comment threads, and export to PDF, DOCX and more.
+- **Connects from the conversation.** Say "connect Google Docs": the server walks you through the OAuth client, catches Google's redirect on `127.0.0.1` with PKCE and keeps the tokens itself — no config files, no restart.
 - **Edits are surgical.** Changes address exact index ranges, and the server steers the assistant to re-read the document before every edit, because each change shifts the indexes after it.
 - **Markdown both ways.** Create a document from Markdown or export to Markdown, PDF, DOCX and other formats; replacing a whole document with Markdown is a separate, explicitly destructive step.
 - **No hidden Drive surface.** Export, Markdown conversion and comments use Drive endpoints internally, but the server exposes no general-purpose Drive tool.
@@ -52,10 +53,10 @@ Start with a read-only question:
 
 ## Quick start
 
-You need Node.js 20+, a Google account and OAuth credentials from a Google Cloud project with the Google Docs API and the Google Drive API enabled.
+You need Node.js 20+ and a Google account. Credentials are not required at install time — the server connects from the conversation.
 
-1. [Prepare Google OAuth access](#getting-access).
-2. Add the server to your AI app.
+1. Add the server to your AI app.
+2. Say "connect Google Docs": the assistant walks you through [creating the OAuth client and approving access](#getting-access) without editing config files.
 3. Ask the read-only question above.
 
 <details open>
@@ -69,9 +70,6 @@ You need Node.js 20+, a Google account and OAuth credentials from a Google Cloud
 
 ```bash
 codex mcp add google-docs \
-  --env GOOGLE_DOCS_CLIENT_ID=your_client_id \
-  --env GOOGLE_DOCS_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_DOCS_REFRESH_TOKEN=your_refresh_token \
   -- npx -y @a1-x-tech/mcp-google-docs@latest
 ```
 
@@ -90,9 +88,6 @@ codex mcp list
 
 ```bash
 claude mcp add \
-  --env GOOGLE_DOCS_CLIENT_ID=your_client_id \
-  --env GOOGLE_DOCS_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_DOCS_REFRESH_TOKEN=your_refresh_token \
   --transport stdio --scope user google-docs \
   -- npx -y @a1-x-tech/mcp-google-docs@latest
 ```
@@ -119,12 +114,7 @@ This repository currently publishes an npm stdio package and does not contain a 
   "mcpServers": {
     "google-docs": {
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"],
-      "env": {
-        "GOOGLE_DOCS_CLIENT_ID": "your_client_id",
-        "GOOGLE_DOCS_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_DOCS_REFRESH_TOKEN": "your_refresh_token"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"]
     }
   }
 }
@@ -149,12 +139,7 @@ Add this to `~/.cursor/mcp.json` on macOS/Linux or `%USERPROFILE%\.cursor\mcp.js
     "google-docs": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"],
-      "env": {
-        "GOOGLE_DOCS_CLIENT_ID": "your_client_id",
-        "GOOGLE_DOCS_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_DOCS_REFRESH_TOKEN": "your_refresh_token"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"]
     }
   }
 }
@@ -177,19 +162,9 @@ Run **MCP: Open User Configuration** and add:
     "google-docs": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"],
-      "env": {
-        "GOOGLE_DOCS_CLIENT_ID": "${input:docs_client_id}",
-        "GOOGLE_DOCS_CLIENT_SECRET": "${input:docs_client_secret}",
-        "GOOGLE_DOCS_REFRESH_TOKEN": "${input:docs_refresh_token}"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"]
     }
-  },
-  "inputs": [
-    { "type": "promptString", "id": "docs_client_id", "description": "Google OAuth client ID" },
-    { "type": "promptString", "id": "docs_client_secret", "description": "Google OAuth client secret", "password": true },
-    { "type": "promptString", "id": "docs_refresh_token", "description": "Google OAuth refresh token", "password": true }
-  ]
+  }
 }
 ```
 
@@ -255,7 +230,20 @@ The AI client controls confirmation prompts. The server marks reads, writes and 
 
 ## Getting access
 
-Google Docs requires OAuth 2.0; an API key is not enough.
+Google Docs requires OAuth 2.0; an API key is not enough. There are two ways in, and the first one needs no configuration files.
+
+### Connect from the chat (recommended)
+
+Say "connect Google Docs" and the assistant runs the flow with you:
+
+1. `setup_instructions` prints the checklist: create or select a Google Cloud project, enable **Google Docs API**, configure the consent screen and create a **Desktop app** OAuth client.
+2. Download that client's JSON ("Download JSON") and give the assistant its **path** — `set_client` stores it owner-only. The secret never goes through the conversation.
+3. `start_login` returns a Google consent link. Open it **on this machine** and approve; the code comes back to a one-shot listener on `127.0.0.1` (PKCE), never through the chat.
+4. `finish_login` exchanges the code and saves the tokens to `~/.config/mcp-google-docs/credentials.json` (mode 0600).
+
+The tokens are re-read on every call, so the connection works immediately — no restart of the AI app. `auth_status` shows what is connected, `logout` revokes and deletes it.
+
+### Environment variables (CI, unattended installs)
 
 1. Create or select a Google Cloud project and enable both the **Google Docs API** and the **Google Drive API** (export, Markdown conversion and comments go through Drive endpoints).
 2. Configure the OAuth consent screen and create a **Desktop app** OAuth client.
@@ -273,12 +261,15 @@ Testing-mode OAuth refresh tokens can expire after seven days. Publish the OAuth
 
 ## Configuration
 
+Every variable is optional — with none of them the server connects [from the chat](#connect-from-the-chat-recommended).
+
 | Variable | Required | Description |
 |---|---|---|
-| `GOOGLE_DOCS_CLIENT_ID` | Yes* | OAuth client ID. |
-| `GOOGLE_DOCS_CLIENT_SECRET` | Yes* | OAuth client secret. |
-| `GOOGLE_DOCS_REFRESH_TOKEN` | Yes* | OAuth refresh token. |
-| `GOOGLE_DOCS_ACCESS_TOKEN` | Yes* | Short-lived alternative to the OAuth trio (~1 hour). |
+| `GOOGLE_DOCS_CLIENT_ID` | No* | OAuth client ID. |
+| `GOOGLE_DOCS_CLIENT_SECRET` | No* | OAuth client secret. |
+| `GOOGLE_DOCS_REFRESH_TOKEN` | No* | OAuth refresh token. |
+| `GOOGLE_DOCS_ACCESS_TOKEN` | No* | Short-lived alternative to the OAuth trio (~1 hour). |
+| `GOOGLE_DOCS_OAUTH_PORT` | No | Fixed loopback port for the in-chat login; useful over SSH port forwarding. |
 | `GOOGLE_DOCS_API_BASE` | No | Google Docs API base URL override. |
 | `GOOGLE_DOCS_DRIVE_API_BASE` | No | Drive API base URL override (export, Markdown, comments). |
 | `GOOGLE_DOCS_TIMEOUT_MS` | No | Per-request timeout; default `60000` ms. |

@@ -11,7 +11,8 @@
 
 Сервер работает с Google Docs API через ваш Google-аккаунт. Он правит текст по точным диапазонам индексов, а не наугад, и явно показывает ограничения Docs API, а не создаёт впечатление, что с документом можно сделать всё.
 
-- **21 инструмент.** Чтение документа как текста, структуры или Markdown, правка точных диапазонов, стили символов и абзацев, списки, таблицы, разрывы, изображения, ветки комментариев и экспорт в PDF, DOCX и другие форматы.
+- **27 инструментов.** Чтение документа как текста, структуры или Markdown, правка точных диапазонов, стили символов и абзацев, списки, таблицы, разрывы, изображения, ветки комментариев и экспорт в PDF, DOCX и другие форматы.
+- **Подключение из диалога.** Скажите «подключи Google Документы»: сервер проведёт через создание OAuth-клиента, поймает редирект Google на `127.0.0.1` с PKCE и сам сохранит токены — без конфигов и перезапуска.
 - **Точечные правки.** Изменения адресуются точными диапазонами индексов, и сервер подталкивает ассистента перечитывать документ перед каждой правкой, потому что каждое изменение сдвигает индексы после него.
 - **Markdown в обе стороны.** Документ можно создать из Markdown или выгрузить в Markdown, PDF, DOCX и другие форматы; замена всего документа из Markdown — отдельный, явно разрушительный шаг.
 - **Без скрытого доступа к Drive.** Экспорт, конвертация Markdown и комментарии внутри используют эндпоинты Drive, но отдельного инструмента общего назначения для Drive у сервера нет.
@@ -52,10 +53,10 @@
 
 ## Быстрый старт
 
-Нужны Node.js 20+, Google-аккаунт и OAuth-данные из проекта Google Cloud с включёнными Google Docs API и Google Drive API.
+Нужны Node.js 20+ и Google-аккаунт. Учётные данные при установке не нужны: сервер подключается прямо в диалоге.
 
-1. [Подготовьте Google OAuth-доступ](#как-получить-доступ).
-2. Добавьте сервер в AI-приложение.
+1. Добавьте сервер в AI-приложение.
+2. Скажите «подключи Google Документы» — ассистент проведёт [создание OAuth-клиента и выдачу доступа](#как-получить-доступ), не трогая конфиги.
 3. Отправьте запрос, который только читает данные.
 
 <details open>
@@ -69,9 +70,6 @@
 
 ```bash
 codex mcp add google-docs \
-  --env GOOGLE_DOCS_CLIENT_ID=your_client_id \
-  --env GOOGLE_DOCS_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_DOCS_REFRESH_TOKEN=your_refresh_token \
   -- npx -y @a1-x-tech/mcp-google-docs@latest
 ```
 
@@ -90,9 +88,6 @@ codex mcp list
 
 ```bash
 claude mcp add \
-  --env GOOGLE_DOCS_CLIENT_ID=your_client_id \
-  --env GOOGLE_DOCS_CLIENT_SECRET=your_client_secret \
-  --env GOOGLE_DOCS_REFRESH_TOKEN=your_refresh_token \
   --transport stdio --scope user google-docs \
   -- npx -y @a1-x-tech/mcp-google-docs@latest
 ```
@@ -119,12 +114,7 @@ claude mcp list
   "mcpServers": {
     "google-docs": {
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"],
-      "env": {
-        "GOOGLE_DOCS_CLIENT_ID": "your_client_id",
-        "GOOGLE_DOCS_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_DOCS_REFRESH_TOKEN": "your_refresh_token"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"]
     }
   }
 }
@@ -149,12 +139,7 @@ claude mcp list
     "google-docs": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"],
-      "env": {
-        "GOOGLE_DOCS_CLIENT_ID": "your_client_id",
-        "GOOGLE_DOCS_CLIENT_SECRET": "your_client_secret",
-        "GOOGLE_DOCS_REFRESH_TOKEN": "your_refresh_token"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"]
     }
   }
 }
@@ -177,19 +162,9 @@ claude mcp list
     "google-docs": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"],
-      "env": {
-        "GOOGLE_DOCS_CLIENT_ID": "${input:docs_client_id}",
-        "GOOGLE_DOCS_CLIENT_SECRET": "${input:docs_client_secret}",
-        "GOOGLE_DOCS_REFRESH_TOKEN": "${input:docs_refresh_token}"
-      }
+      "args": ["-y", "@a1-x-tech/mcp-google-docs@latest"]
     }
-  },
-  "inputs": [
-    { "type": "promptString", "id": "docs_client_id", "description": "Google OAuth client ID" },
-    { "type": "promptString", "id": "docs_client_secret", "description": "Google OAuth client secret", "password": true },
-    { "type": "promptString", "id": "docs_refresh_token", "description": "Google OAuth refresh token", "password": true }
-  ]
+  }
 }
 ```
 
@@ -255,7 +230,20 @@ claude mcp list
 
 ## Как получить доступ
 
-Google Docs требует OAuth 2.0: одного API-ключа недостаточно.
+Google Docs требует OAuth 2.0: одного API-ключа недостаточно. Путей два, и первый не требует править конфигурационные файлы.
+
+### Подключение из диалога (рекомендуемый путь)
+
+Скажите «подключи Google Документы», и ассистент пройдёт флоу вместе с вами:
+
+1. `setup_instructions` выдаёт чек-лист: создать или выбрать проект Google Cloud, включить **Google Docs API**, настроить consent screen и создать OAuth-клиент типа **Desktop app**.
+2. Скачайте JSON этого клиента («Download JSON») и передайте ассистенту **путь** к файлу — `set_client` сохранит его с правами только для владельца. Секрет через переписку не проходит.
+3. `start_login` возвращает ссылку на согласие Google. Откройте её **на этой же машине** и подтвердите доступ: код возвращается на одноразовый слушатель `127.0.0.1` (PKCE), а не в чат.
+4. `finish_login` меняет код на токены и кладёт их в `~/.config/mcp-google-docs/credentials.json` (права 0600).
+
+Токены перечитываются на каждый вызов, поэтому подключение действует немедленно — перезапускать AI-приложение не нужно. `auth_status` показывает состояние, `logout` отзывает токен и удаляет его.
+
+### Переменные окружения (CI и автоматические установки)
 
 1. Создайте или выберите проект Google Cloud и включите оба API — **Google Docs API** и **Google Drive API** (экспорт, конвертация Markdown и комментарии идут через эндпоинты Drive).
 2. Настройте OAuth consent screen и создайте OAuth-клиент типа **Desktop app**.
@@ -273,12 +261,15 @@ Refresh token OAuth-приложения в режиме Testing может ис
 
 ## Конфигурация
 
+Все переменные необязательные — без единой из них сервер подключается [из диалога](#подключение-из-диалога-рекомендуемый-путь).
+
 | Переменная | Обязательна | Описание |
 |---|---|---|
-| `GOOGLE_DOCS_CLIENT_ID` | Да* | OAuth client ID. |
-| `GOOGLE_DOCS_CLIENT_SECRET` | Да* | OAuth client secret. |
-| `GOOGLE_DOCS_REFRESH_TOKEN` | Да* | OAuth refresh token. |
-| `GOOGLE_DOCS_ACCESS_TOKEN` | Да* | Короткоживущая альтернатива OAuth-тройке (~1 час). |
+| `GOOGLE_DOCS_CLIENT_ID` | Нет* | OAuth client ID. |
+| `GOOGLE_DOCS_CLIENT_SECRET` | Нет* | OAuth client secret. |
+| `GOOGLE_DOCS_REFRESH_TOKEN` | Нет* | OAuth refresh token. |
+| `GOOGLE_DOCS_ACCESS_TOKEN` | Нет* | Короткоживущая альтернатива OAuth-тройке (~1 час). |
+| `GOOGLE_DOCS_OAUTH_PORT` | Нет | Фиксированный порт loopback-слушателя для входа из диалога; нужен при пробросе портов по SSH. |
 | `GOOGLE_DOCS_API_BASE` | Нет | Переопределяет базовый URL Google Docs API. |
 | `GOOGLE_DOCS_DRIVE_API_BASE` | Нет | Переопределяет базовый URL Drive API (экспорт, Markdown, комментарии). |
 | `GOOGLE_DOCS_TIMEOUT_MS` | Нет | Тайм-аут одного запроса; по умолчанию `60000` мс. |
