@@ -1,0 +1,24 @@
+{
+  "name": "mcp-google-docs",
+  "displayName": "A1 Google Docs MCP",
+  "description": "MCP server for the Google Docs API — read documents as text, structure or Markdown, edit text by ranges, style, tables, images, comments and export. For Claude, Cursor, Codex and other AI clients.",
+  "author": {
+    "name": "Aleksandr Kovalko & Zinnur Temerbekov"
+  },
+  "homepage": "https://github.com/A1-x-Tech/mcp-google-docs#readme",
+  "repository": "https://github.com/A1-x-Tech/mcp-google-docs",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google",
+    "google-docs",
+    "docs",
+    "documents",
+    "markdown",
+    "claude",
+    "cursor",
+    "codex"
+  ],
+  "logo": "assets/a1-logo.svg"
+}

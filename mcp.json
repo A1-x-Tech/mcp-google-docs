@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "google-docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@a1-x-tech/mcp-google-docs@latest"
+      ]
+    }
+  }
+}
