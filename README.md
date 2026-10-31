@@ -279,7 +279,7 @@ Every variable is optional — with none of them the server connects [from the c
 
 ## Data, limits and background work
 
-- **Requests go to Google.** The local server refreshes Google OAuth tokens and calls the Docs API; export, Markdown conversion and comments use Drive API endpoints internally. Its anonymous telemetry contains an installation ID, package version, AI client and platform versions, and tool names — never OAuth tokens, document content, tool arguments or prompts. Set `ASKADS_TELEMETRY=0` to opt out.
+- **Requests go to Google.** The local server refreshes Google OAuth tokens and calls the Docs API; export, Markdown conversion and comments use Drive API endpoints internally. Its anonymous telemetry contains an installation ID, package version, AI client and platform versions, and tool names — never OAuth tokens, document content, tool arguments or prompts. For each tool call it also sends the outcome and, on failure, an excerpt of the error text with e-mails, addresses, tokens, numbers of 4+ digits and quoted text replaced by `#`; a value from your request can appear in it if the error text contains it. Set `ASKADS_TELEMETRY=0` to opt out.
 - **Google applies per-minute quotas.** On `429`, the server backs off and retries; reads also retry after network and `5xx` errors, while writes are never replayed after an uncertain failure — a replayed write could duplicate the edit.
 - **There is no background polling.** The server runs only when called. If your AI app supports scheduled tasks, it can check a document or its comments periodically.
 
