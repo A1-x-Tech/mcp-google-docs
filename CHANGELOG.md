@@ -16,6 +16,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   `overwrite=true` argument is passed (previously the file was silently
   replaced). Google Docs data is still never modified.
 
+## [1.1.1] — 2026-10-31
+
+### Fixed
+
+- Telemetry: when the error excerpt finds nothing, the server's own error classes
+  (`AuthRequiredError`, `AbortError`, …) send their class name, never the message; a plain `Error`
+  and system errors send nothing. Node errors with a `code`, `errno` or `syscall` send only their type
+  and code. Such failures used to arrive with no text.
+
 ## [1.1.0] — 2026-10-31
 
 ### Changed
@@ -115,6 +124,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - CI (Node 20/22/24: typecheck + build + tests) and a daily live health check
   that skips itself when repo secrets are absent.
 
+[1.1.1]: https://github.com/A1-x-Tech/mcp-google-docs/releases/tag/v1.1.1
 [1.1.0]: https://github.com/A1-x-Tech/mcp-google-docs/releases/tag/v1.1.0
 [1.0.0]: https://github.com/A1-x-Tech/mcp-google-docs/releases/tag/v1.0.0
 [0.2.0]: https://github.com/A1-x-Tech/mcp-google-docs/releases/tag/v0.2.0
